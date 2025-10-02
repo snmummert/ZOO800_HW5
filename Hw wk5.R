@@ -5,7 +5,7 @@
 
 install.packages("readxl")
 install.packages("writexl")
-
+library(dplyr)
 
 ##Problem 1##
 
@@ -14,8 +14,7 @@ fish.csv = read.csv("fish.csv")
 head(fish.csv, 5)
 fish.xlsx = readxl::read_excel("fish.xlsx")
 head(fish.xlsx, 5)
-fish.rds = readRDS("fish.rds")
-head(fish.rds)
+
 
 ##Problem 2## 
 
@@ -34,4 +33,8 @@ file.info(c("Output/fish.csv", "Output/fish.xlsx", "Output/fish.rds"))$size
 
 ##Problem 3##
 
-filter(Spec)
+fish.filtered = fish.cvs %>%
+  filter(Species %in% c("Walleye", "Yellow Perch", "Smallmouth Bass"),
+         Lake %in% c("Erie", "Michigan")) %>%
+  select(Species, Lake, Year, Length_cm, Weight_g)
+  
