@@ -74,3 +74,8 @@ ggplot(fish.summarized, aes(Year, mean_weight, color = Species)) +
 #Export Results
 write.csv(fish.mutated, "Output/fish.mutated.csv", row.names = FALSE)
 write.csv(fish.mutated, "Output/fish.summarised.csv", row.names = FALSE)
+
+##Problem 4## 
+all.files = list.files("Multiple_files", full.names = TRUE)
+all.list = lapply(all.files, read.csv)
+all.data = dplyr::bind_rows(all.list) #combined into 1 data frame
