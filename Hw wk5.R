@@ -3,8 +3,6 @@
 ## Maddie Thall and Sophia Mummert ##
 #####################################
 
-install.packages("readxl")
-install.packages("writexl")
 library(dplyr)
 
 ##Problem 1##
@@ -33,8 +31,51 @@ file.info(c("Output/fish.csv", "Output/fish.xlsx", "Output/fish.rds"))$size
 
 ##Problem 3##
 
-fish.filtered = fish.cvs %>%
+#Filter & Select
+fish.filtered = fish.csv %>%
   filter(Species %in% c("Walleye", "Yellow Perch", "Smallmouth Bass"),
          Lake %in% c("Erie", "Michigan")) %>%
   select(Species, Lake, Year, Length_cm, Weight_g)
-  
+
+#Create Variables
+fish.mutated = fish.filtered %>%
+  mutate(
+    Length_mm = Length_cm * 10,
+    Length_group = cut(
+      Length_mm,
+      breaks = c(-Inf, 200, 400, 600, Inf),
+      right = TRUE
+    )
+  ) %>%
+  group_by(Species, Length_group) %>%
+  mutate(Count = n()) %>%
+  ungroup()
+
+#Summarise
+fish.summarized = fish.mutated %>%
+  group_by(Species, Year) %>%
+  summarise(
+    mean_weight = mean(Weight_g, na.rm = TRUE),
+    median_weight = median(Weight_g, na.rm = TRUE),
+    n = n()
+  )
+
+#Plot
+library(ggplot2)
+ggplot(fish.summarized, aes(Year, mean_weight, color = Species)) +
+  geom_line() +
+  geom_point() +
+  labs(
+    title = "Temporal Change of Mean Weight by Species",
+    x = "Year",
+    y = "Mean Weight (g)"
+  )
+
+#Export Results
+write.csv(fish.mutated, "Output/fish.mutated.csv", row.names = FALSE)
+write.csv(fish.mutated, "Output/fish.summarised.csv", row.names = FALSE)
+
+##Problem 4## 
+all.files = list.files("Multiple_files", full.names = TRUE)
+all.list = lapply(all.files, read.csv)
+all.data = dplyr::bind_rows(all.list) #combined into 1 data frame
