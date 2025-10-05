@@ -4,6 +4,7 @@
 #####################################
 
 library(dplyr)
+library(parallel)
 
 ##Problem 1##
 
@@ -79,3 +80,58 @@ write.csv(fish.mutated, "Output/fish.summarised.csv", row.names = FALSE)
 all.files = list.files("Multiple_files", full.names = TRUE)
 all.list = lapply(all.files, read.csv)
 all.data = dplyr::bind_rows(all.list) #combined into 1 data frame
+
+##Problem 5##
+
+lake.erie = filter(fish.csv, Lake %in% "Erie") #pull from dataset to just have Lake Erie
+species.erie = unique(lake.erie$Species)
+
+boot_mean = function(species_name, n_boot = 10000, sample_size = 200) {
+  x = lake.erie$Weight_g[lake.erie$Species == species_name]
+  means = replicate(n_boot, mean(sample(x, size = sample_size, replace = TRUE)))
+  mean(means)
+}
+
+#output for results using sapply to merge the species names with their boot mean
+boot_results = sapply(species.erie, boot_mean)
+
+print(boot_results)
+
+t_serial <- system.time({
+  res_serial <- lapply(
+    species,
+    boot_mean,               
+    n_boot = 10000,
+    sample_size = 200
+  )
+})
+head(res_serial)
+
+n_cores <- max(1, detectCores() - 1)
+cl <- makeCluster(n_cores)
+
+clusterSetRNGStream(cl, iseed = 123)
+
+clusterExport(cl, varlist = c("lake.erie", "boot_mean", "species"), envir = environment())
+
+t_parallel <- system.time({ 
+  res_parallel <- parLapply(
+    cl,
+    species, 
+    boot_mean,
+    n_boot = 10000,
+    sample_size = 200
+  )
+})
+
+stopCluster(cl)
+
+head(res_parallel)
+
+elapsed_serial   <- unname(t_serial["elapsed"])
+elapsed_parallel <- unname(t_parallel["elapsed"])
+speedup <- elapsed_serial / elapsed_parallel
+
+cat("Serial elapsed (s):   ", round(elapsed_serial, 3), "\n")
+cat("Parallel elapsed (s): ", round(elapsed_parallel, 3), " using ", n_cores, " cores\n", sep = "")
+cat("Speedup:               ", round(speedup, 2), "x\n", sep = "")
